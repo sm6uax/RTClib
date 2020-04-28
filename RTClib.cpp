@@ -46,7 +46,7 @@
 #include <TinyWireM.h>
 #define Wire TinyWireM
 #else
-#include <Wire.h>
+#include <OneWire.h>
 #endif
 
 #include "RTClib.h"
