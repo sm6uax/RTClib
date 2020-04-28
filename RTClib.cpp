@@ -59,7 +59,7 @@
 #elif defined(ARDUINO_SAM_DUE)
 #define PROGMEM
 #define pgm_read_byte(addr) (*(const unsigned char *)(addr))
-#define Wire Wire1
+#define oneWire oneWire1
 #endif
 
 #if (ARDUINO >= 100)
@@ -74,6 +74,7 @@
 #define _I2C_READ receive ///< legacy I2C read
 #endif
 
+OneWire oneWireRTC;
 /**************************************************************************/
 /*!
     @brief  Read a byte from an I2C register
@@ -83,12 +84,12 @@
 */
 /**************************************************************************/
 static uint8_t read_i2c_register(uint8_t addr, uint8_t reg) {
-  Wire.beginTransmission(addr);
-  Wire._I2C_WRITE((byte)reg);
-  Wire.endTransmission();
+  oneWireRTC.beginTransmission(addr);
+  oneWireRTC._I2C_WRITE((byte)reg);
+  oneWireRTC.endTransmission();
 
-  Wire.requestFrom(addr, (byte)1);
-  return Wire._I2C_READ();
+  oneWireRTC.requestFrom(addr, (byte)1);
+  return oneWireRTC._I2C_READ();
 }
 
 /**************************************************************************/
@@ -100,10 +101,10 @@ static uint8_t read_i2c_register(uint8_t addr, uint8_t reg) {
 */
 /**************************************************************************/
 static void write_i2c_register(uint8_t addr, uint8_t reg, uint8_t val) {
-  Wire.beginTransmission(addr);
-  Wire._I2C_WRITE((byte)reg);
-  Wire._I2C_WRITE((byte)val);
-  Wire.endTransmission();
+  oneWireRTC.beginTransmission(addr);
+  oneWireRTC._I2C_WRITE((byte)reg);
+  oneWireRTC._I2C_WRITE((byte)val);
+  oneWireRTC.endTransmission();
 }
 
 /**************************************************************************/
@@ -760,7 +761,7 @@ static uint8_t bin2bcd(uint8_t val) { return val + 6 * (val / 10); }
 */
 /**************************************************************************/
 boolean RTC_DS1307::begin(void) {
-  Wire.begin();
+  oneWireRTC.begin();
   return true;
 }
 
@@ -771,12 +772,12 @@ boolean RTC_DS1307::begin(void) {
 */
 /**************************************************************************/
 uint8_t RTC_DS1307::isrunning(void) {
-  Wire.beginTransmission(DS1307_ADDRESS);
-  Wire._I2C_WRITE((byte)0);
-  Wire.endTransmission();
+  oneWireRTC.beginTransmission(DS1307_ADDRESS);
+  oneWireRTC._I2C_WRITE((byte)0);
+  oneWireRTC.endTransmission();
 
-  Wire.requestFrom(DS1307_ADDRESS, 1);
-  uint8_t ss = Wire._I2C_READ();
+  oneWireRTC.requestFrom(DS1307_ADDRESS, 1);
+  uint8_t ss = oneWireRTC._I2C_READ();
   return !(ss >> 7);
 }
 
@@ -787,16 +788,16 @@ uint8_t RTC_DS1307::isrunning(void) {
 */
 /**************************************************************************/
 void RTC_DS1307::adjust(const DateTime &dt) {
-  Wire.beginTransmission(DS1307_ADDRESS);
-  Wire._I2C_WRITE((byte)0); // start at location 0
-  Wire._I2C_WRITE(bin2bcd(dt.second()));
-  Wire._I2C_WRITE(bin2bcd(dt.minute()));
-  Wire._I2C_WRITE(bin2bcd(dt.hour()));
-  Wire._I2C_WRITE(bin2bcd(0));
-  Wire._I2C_WRITE(bin2bcd(dt.day()));
-  Wire._I2C_WRITE(bin2bcd(dt.month()));
-  Wire._I2C_WRITE(bin2bcd(dt.year() - 2000));
-  Wire.endTransmission();
+  oneWireRTC.beginTransmission(DS1307_ADDRESS);
+  oneWireRTC._I2C_WRITE((byte)0); // start at location 0
+  oneWireRTC._I2C_WRITE(bin2bcd(dt.second()));
+  oneWireRTC._I2C_WRITE(bin2bcd(dt.minute()));
+  oneWireRTC._I2C_WRITE(bin2bcd(dt.hour()));
+  oneWireRTC._I2C_WRITE(bin2bcd(0));
+  oneWireRTC._I2C_WRITE(bin2bcd(dt.day()));
+  oneWireRTC._I2C_WRITE(bin2bcd(dt.month()));
+  oneWireRTC._I2C_WRITE(bin2bcd(dt.year() - 2000));
+  oneWireRTC.endTransmission();
 }
 
 /**************************************************************************/
@@ -806,18 +807,18 @@ void RTC_DS1307::adjust(const DateTime &dt) {
 */
 /**************************************************************************/
 DateTime RTC_DS1307::now() {
-  Wire.beginTransmission(DS1307_ADDRESS);
-  Wire._I2C_WRITE((byte)0);
-  Wire.endTransmission();
+  oneWireRTC.beginTransmission(DS1307_ADDRESS);
+  oneWireRTC._I2C_WRITE((byte)0);
+  oneWireRTC.endTransmission();
 
-  Wire.requestFrom(DS1307_ADDRESS, 7);
-  uint8_t ss = bcd2bin(Wire._I2C_READ() & 0x7F);
-  uint8_t mm = bcd2bin(Wire._I2C_READ());
-  uint8_t hh = bcd2bin(Wire._I2C_READ());
-  Wire._I2C_READ();
-  uint8_t d = bcd2bin(Wire._I2C_READ());
-  uint8_t m = bcd2bin(Wire._I2C_READ());
-  uint16_t y = bcd2bin(Wire._I2C_READ()) + 2000;
+  oneWireRTC.requestFrom(DS1307_ADDRESS, 7);
+  uint8_t ss = bcd2bin(oneWireRTC._I2C_READ() & 0x7F);
+  uint8_t mm = bcd2bin(oneWireRTC._I2C_READ());
+  uint8_t hh = bcd2bin(oneWireRTC._I2C_READ());
+  oneWireRTC._I2C_READ();
+  uint8_t d = bcd2bin(oneWireRTC._I2C_READ());
+  uint8_t m = bcd2bin(oneWireRTC._I2C_READ());
+  uint16_t y = bcd2bin(oneWireRTC._I2C_READ()) + 2000;
 
   return DateTime(y, m, d, hh, mm, ss);
 }
@@ -831,12 +832,12 @@ DateTime RTC_DS1307::now() {
 Ds1307SqwPinMode RTC_DS1307::readSqwPinMode() {
   int mode;
 
-  Wire.beginTransmission(DS1307_ADDRESS);
-  Wire._I2C_WRITE(DS1307_CONTROL);
-  Wire.endTransmission();
+  oneWireRTC.beginTransmission(DS1307_ADDRESS);
+  oneWireRTC._I2C_WRITE(DS1307_CONTROL);
+  oneWireRTC.endTransmission();
 
-  Wire.requestFrom((uint8_t)DS1307_ADDRESS, (uint8_t)1);
-  mode = Wire._I2C_READ();
+  oneWireRTC.requestFrom((uint8_t)DS1307_ADDRESS, (uint8_t)1);
+  mode = oneWireRTC._I2C_READ();
 
   mode &= 0x93;
   return static_cast<Ds1307SqwPinMode>(mode);
@@ -849,10 +850,10 @@ Ds1307SqwPinMode RTC_DS1307::readSqwPinMode() {
 */
 /**************************************************************************/
 void RTC_DS1307::writeSqwPinMode(Ds1307SqwPinMode mode) {
-  Wire.beginTransmission(DS1307_ADDRESS);
-  Wire._I2C_WRITE(DS1307_CONTROL);
-  Wire._I2C_WRITE(mode);
-  Wire.endTransmission();
+  oneWireRTC.beginTransmission(DS1307_ADDRESS);
+  oneWireRTC._I2C_WRITE(DS1307_CONTROL);
+  oneWireRTC._I2C_WRITE(mode);
+  oneWireRTC.endTransmission();
 }
 
 /**************************************************************************/
@@ -866,13 +867,13 @@ void RTC_DS1307::writeSqwPinMode(Ds1307SqwPinMode mode) {
 /**************************************************************************/
 void RTC_DS1307::readnvram(uint8_t *buf, uint8_t size, uint8_t address) {
   int addrByte = DS1307_NVRAM + address;
-  Wire.beginTransmission(DS1307_ADDRESS);
-  Wire._I2C_WRITE(addrByte);
-  Wire.endTransmission();
+  oneWireRTC.beginTransmission(DS1307_ADDRESS);
+  oneWireRTC._I2C_WRITE(addrByte);
+  oneWireRTC.endTransmission();
 
-  Wire.requestFrom((uint8_t)DS1307_ADDRESS, size);
+  oneWireRTC.requestFrom((uint8_t)DS1307_ADDRESS, size);
   for (uint8_t pos = 0; pos < size; ++pos) {
-    buf[pos] = Wire._I2C_READ();
+    buf[pos] = oneWireRTC._I2C_READ();
   }
 }
 
@@ -886,12 +887,12 @@ void RTC_DS1307::readnvram(uint8_t *buf, uint8_t size, uint8_t address) {
 /**************************************************************************/
 void RTC_DS1307::writenvram(uint8_t address, uint8_t *buf, uint8_t size) {
   int addrByte = DS1307_NVRAM + address;
-  Wire.beginTransmission(DS1307_ADDRESS);
-  Wire._I2C_WRITE(addrByte);
+  oneWireRTC.beginTransmission(DS1307_ADDRESS);
+  oneWireRTC._I2C_WRITE(addrByte);
   for (uint8_t pos = 0; pos < size; ++pos) {
-    Wire._I2C_WRITE(buf[pos]);
+    oneWireRTC._I2C_WRITE(buf[pos]);
   }
-  Wire.endTransmission();
+  oneWireRTC.endTransmission();
 }
 
 /**************************************************************************/
@@ -1002,7 +1003,7 @@ DateTime RTC_Micros::now() {
 ////////////////////////////////////////////////////////////////////////////////
 // RTC_PCF8563 implementation
 boolean RTC_PCF8523::begin(void) {
-  Wire.begin();
+  oneWireRTC.begin();
   return true;
 }
 
@@ -1014,12 +1015,12 @@ boolean RTC_PCF8523::begin(void) {
 */
 /**************************************************************************/
 boolean RTC_PCF8523::initialized(void) {
-  Wire.beginTransmission(PCF8523_ADDRESS);
-  Wire._I2C_WRITE((byte)PCF8523_CONTROL_3);
-  Wire.endTransmission();
+  oneWireRTC.beginTransmission(PCF8523_ADDRESS);
+  oneWireRTC._I2C_WRITE((byte)PCF8523_CONTROL_3);
+  oneWireRTC.endTransmission();
 
-  Wire.requestFrom(PCF8523_ADDRESS, 1);
-  uint8_t ss = Wire._I2C_READ();
+  oneWireRTC.requestFrom(PCF8523_ADDRESS, 1);
+  uint8_t ss = oneWireRTC._I2C_READ();
   return ((ss & 0xE0) != 0xE0); // 0xE0 = standby mode, set after power out
 }
 
@@ -1030,22 +1031,22 @@ boolean RTC_PCF8523::initialized(void) {
 */
 /**************************************************************************/
 void RTC_PCF8523::adjust(const DateTime &dt) {
-  Wire.beginTransmission(PCF8523_ADDRESS);
-  Wire._I2C_WRITE((byte)3); // start at location 3
-  Wire._I2C_WRITE(bin2bcd(dt.second()));
-  Wire._I2C_WRITE(bin2bcd(dt.minute()));
-  Wire._I2C_WRITE(bin2bcd(dt.hour()));
-  Wire._I2C_WRITE(bin2bcd(dt.day()));
-  Wire._I2C_WRITE(bin2bcd(0)); // skip weekdays
-  Wire._I2C_WRITE(bin2bcd(dt.month()));
-  Wire._I2C_WRITE(bin2bcd(dt.year() - 2000));
-  Wire.endTransmission();
+  oneWireRTC.beginTransmission(PCF8523_ADDRESS);
+  oneWireRTC._I2C_WRITE((byte)3); // start at location 3
+  oneWireRTC._I2C_WRITE(bin2bcd(dt.second()));
+  oneWireRTC._I2C_WRITE(bin2bcd(dt.minute()));
+  oneWireRTC._I2C_WRITE(bin2bcd(dt.hour()));
+  oneWireRTC._I2C_WRITE(bin2bcd(dt.day()));
+  oneWireRTC._I2C_WRITE(bin2bcd(0)); // skip weekdays
+  oneWireRTC._I2C_WRITE(bin2bcd(dt.month()));
+  oneWireRTC._I2C_WRITE(bin2bcd(dt.year() - 2000));
+  oneWireRTC.endTransmission();
 
   // set to battery switchover mode
-  Wire.beginTransmission(PCF8523_ADDRESS);
-  Wire._I2C_WRITE((byte)PCF8523_CONTROL_3);
-  Wire._I2C_WRITE((byte)0x00);
-  Wire.endTransmission();
+  oneWireRTC.beginTransmission(PCF8523_ADDRESS);
+  oneWireRTC._I2C_WRITE((byte)PCF8523_CONTROL_3);
+  oneWireRTC._I2C_WRITE((byte)0x00);
+  oneWireRTC.endTransmission();
 }
 
 /**************************************************************************/
@@ -1055,18 +1056,18 @@ void RTC_PCF8523::adjust(const DateTime &dt) {
 */
 /**************************************************************************/
 DateTime RTC_PCF8523::now() {
-  Wire.beginTransmission(PCF8523_ADDRESS);
-  Wire._I2C_WRITE((byte)3);
-  Wire.endTransmission();
+  oneWireRTC.beginTransmission(PCF8523_ADDRESS);
+  oneWireRTC._I2C_WRITE((byte)3);
+  oneWireRTC.endTransmission();
 
-  Wire.requestFrom(PCF8523_ADDRESS, 7);
-  uint8_t ss = bcd2bin(Wire._I2C_READ() & 0x7F);
-  uint8_t mm = bcd2bin(Wire._I2C_READ());
-  uint8_t hh = bcd2bin(Wire._I2C_READ());
-  uint8_t d = bcd2bin(Wire._I2C_READ());
-  Wire._I2C_READ(); // skip 'weekdays'
-  uint8_t m = bcd2bin(Wire._I2C_READ());
-  uint16_t y = bcd2bin(Wire._I2C_READ()) + 2000;
+  oneWireRTC.requestFrom(PCF8523_ADDRESS, 7);
+  uint8_t ss = bcd2bin(oneWireRTC._I2C_READ() & 0x7F);
+  uint8_t mm = bcd2bin(oneWireRTC._I2C_READ());
+  uint8_t hh = bcd2bin(oneWireRTC._I2C_READ());
+  uint8_t d = bcd2bin(oneWireRTC._I2C_READ());
+  oneWireRTC._I2C_READ(); // skip 'weekdays'
+  uint8_t m = bcd2bin(oneWireRTC._I2C_READ());
+  uint16_t y = bcd2bin(oneWireRTC._I2C_READ()) + 2000;
 
   return DateTime(y, m, d, hh, mm, ss);
 }
@@ -1080,12 +1081,12 @@ DateTime RTC_PCF8523::now() {
 Pcf8523SqwPinMode RTC_PCF8523::readSqwPinMode() {
   int mode;
 
-  Wire.beginTransmission(PCF8523_ADDRESS);
-  Wire._I2C_WRITE(PCF8523_CLKOUTCONTROL);
-  Wire.endTransmission();
+  oneWireRTC.beginTransmission(PCF8523_ADDRESS);
+  oneWireRTC._I2C_WRITE(PCF8523_CLKOUTCONTROL);
+  oneWireRTC.endTransmission();
 
-  Wire.requestFrom((uint8_t)PCF8523_ADDRESS, (uint8_t)1);
-  mode = Wire._I2C_READ();
+  oneWireRTC.requestFrom((uint8_t)PCF8523_ADDRESS, (uint8_t)1);
+  mode = oneWireRTC._I2C_READ();
 
   mode >>= 3;
   mode &= 0x7;
@@ -1099,10 +1100,10 @@ Pcf8523SqwPinMode RTC_PCF8523::readSqwPinMode() {
 */
 /**************************************************************************/
 void RTC_PCF8523::writeSqwPinMode(Pcf8523SqwPinMode mode) {
-  Wire.beginTransmission(PCF8523_ADDRESS);
-  Wire._I2C_WRITE(PCF8523_CLKOUTCONTROL);
-  Wire._I2C_WRITE(mode << 3);
-  Wire.endTransmission();
+  oneWireRTC.beginTransmission(PCF8523_ADDRESS);
+  oneWireRTC._I2C_WRITE(PCF8523_CLKOUTCONTROL);
+  oneWireRTC._I2C_WRITE(mode << 3);
+  oneWireRTC.endTransmission();
 }
 
 /**************************************************************************/
@@ -1121,22 +1122,22 @@ void RTC_PCF8523::calibrate(Pcf8523OffsetMode mode, int8_t offset) {
   uint8_t reg = (uint8_t)offset & 0x7F;
   reg |= mode;
 
-  Wire.beginTransmission(PCF8523_ADDRESS);
-  Wire._I2C_WRITE(PCF8523_OFFSET);
-  Wire._I2C_WRITE(reg);
-  Wire.endTransmission();
+  oneWireRTC.beginTransmission(PCF8523_ADDRESS);
+  oneWireRTC._I2C_WRITE(PCF8523_OFFSET);
+  oneWireRTC._I2C_WRITE(reg);
+  oneWireRTC.endTransmission();
 }
 
 /**************************************************************************/
 /*!
     @brief  Start I2C for the DS3231 and test succesful connection
-    @return True if Wire can find DS3231 or false otherwise.
+    @return True if oneWire can find DS3231 or false otherwise.
 */
 /**************************************************************************/
 boolean RTC_DS3231::begin(void) {
-  Wire.begin();
-  Wire.beginTransmission(DS3231_ADDRESS);
-  if (Wire.endTransmission() == 0)
+  oneWireRTC.begin();
+  oneWireRTC.beginTransmission(DS3231_ADDRESS);
+  if (oneWireRTC.endTransmission() == 0)
     return true;
   return false;
 }
@@ -1160,16 +1161,16 @@ bool RTC_DS3231::lostPower(void) {
 */
 /**************************************************************************/
 void RTC_DS3231::adjust(const DateTime &dt) {
-  Wire.beginTransmission(DS3231_ADDRESS);
-  Wire._I2C_WRITE((byte)DS3231_TIME); // start at location 0
-  Wire._I2C_WRITE(bin2bcd(dt.second()));
-  Wire._I2C_WRITE(bin2bcd(dt.minute()));
-  Wire._I2C_WRITE(bin2bcd(dt.hour()));
-  Wire._I2C_WRITE(bin2bcd(0));
-  Wire._I2C_WRITE(bin2bcd(dt.day()));
-  Wire._I2C_WRITE(bin2bcd(dt.month()));
-  Wire._I2C_WRITE(bin2bcd(dt.year() - 2000));
-  Wire.endTransmission();
+  oneWireRTC.beginTransmission(DS3231_ADDRESS);
+  oneWireRTC._I2C_WRITE((byte)DS3231_TIME); // start at location 0
+  oneWireRTC._I2C_WRITE(bin2bcd(dt.second()));
+  oneWireRTC._I2C_WRITE(bin2bcd(dt.minute()));
+  oneWireRTC._I2C_WRITE(bin2bcd(dt.hour()));
+  oneWireRTC._I2C_WRITE(bin2bcd(0));
+  oneWireRTC._I2C_WRITE(bin2bcd(dt.day()));
+  oneWireRTC._I2C_WRITE(bin2bcd(dt.month()));
+  oneWireRTC._I2C_WRITE(bin2bcd(dt.year() - 2000));
+  oneWireRTC.endTransmission();
 
   uint8_t statreg = read_i2c_register(DS3231_ADDRESS, DS3231_STATUSREG);
   statreg &= ~0x80; // flip OSF bit
@@ -1183,18 +1184,18 @@ void RTC_DS3231::adjust(const DateTime &dt) {
 */
 /**************************************************************************/
 DateTime RTC_DS3231::now() {
-  Wire.beginTransmission(DS3231_ADDRESS);
-  Wire._I2C_WRITE((byte)0);
-  Wire.endTransmission();
+  oneWireRTC.beginTransmission(DS3231_ADDRESS);
+  oneWireRTC._I2C_WRITE((byte)0);
+  oneWireRTC.endTransmission();
 
-  Wire.requestFrom(DS3231_ADDRESS, 7);
-  uint8_t ss = bcd2bin(Wire._I2C_READ() & 0x7F);
-  uint8_t mm = bcd2bin(Wire._I2C_READ());
-  uint8_t hh = bcd2bin(Wire._I2C_READ());
-  Wire._I2C_READ();
-  uint8_t d = bcd2bin(Wire._I2C_READ());
-  uint8_t m = bcd2bin(Wire._I2C_READ());
-  uint16_t y = bcd2bin(Wire._I2C_READ()) + 2000;
+  oneWireRTC.requestFrom(DS3231_ADDRESS, 7);
+  uint8_t ss = bcd2bin(oneWireRTC._I2C_READ() & 0x7F);
+  uint8_t mm = bcd2bin(oneWireRTC._I2C_READ());
+  uint8_t hh = bcd2bin(oneWireRTC._I2C_READ());
+  oneWireRTC._I2C_READ();
+  uint8_t d = bcd2bin(oneWireRTC._I2C_READ());
+  uint8_t m = bcd2bin(oneWireRTC._I2C_READ());
+  uint16_t y = bcd2bin(oneWireRTC._I2C_READ()) + 2000;
 
   return DateTime(y, m, d, hh, mm, ss);
 }
@@ -1208,12 +1209,12 @@ DateTime RTC_DS3231::now() {
 Ds3231SqwPinMode RTC_DS3231::readSqwPinMode() {
   int mode;
 
-  Wire.beginTransmission(DS3231_ADDRESS);
-  Wire._I2C_WRITE(DS3231_CONTROL);
-  Wire.endTransmission();
+  oneWireRTC.beginTransmission(DS3231_ADDRESS);
+  oneWireRTC._I2C_WRITE(DS3231_CONTROL);
+  oneWireRTC.endTransmission();
 
-  Wire.requestFrom((uint8_t)DS3231_ADDRESS, (uint8_t)1);
-  mode = Wire._I2C_READ();
+  oneWireRTC.requestFrom((uint8_t)DS3231_ADDRESS, (uint8_t)1);
+  mode = oneWireRTC._I2C_READ();
 
   mode &= 0x93;
   return static_cast<Ds3231SqwPinMode>(mode);
@@ -1251,13 +1252,13 @@ void RTC_DS3231::writeSqwPinMode(Ds3231SqwPinMode mode) {
 float RTC_DS3231::getTemperature() {
   uint8_t lsb;
   int8_t msb;
-  Wire.beginTransmission(DS3231_ADDRESS);
-  Wire._I2C_WRITE(DS3231_TEMPERATUREREG);
-  Wire.endTransmission();
+  oneWireRTC.beginTransmission(DS3231_ADDRESS);
+  oneWireRTC._I2C_WRITE(DS3231_TEMPERATUREREG);
+  oneWireRTC.endTransmission();
 
-  Wire.requestFrom(DS3231_ADDRESS, 2);
-  msb = Wire._I2C_READ();
-  lsb = Wire._I2C_READ();
+  oneWireRTC.requestFrom(DS3231_ADDRESS, 2);
+  msb = oneWireRTC._I2C_READ();
+  lsb = oneWireRTC._I2C_READ();
 
   //  Serial.print("msb=");
   //  Serial.print(msb,HEX);
@@ -1288,17 +1289,17 @@ bool RTC_DS3231::setAlarm1(const DateTime &dt, Ds3231Alarm1Mode alarm_mode) {
   uint8_t DY_DT = (alarm_mode & 0x10)
                   << 2; // Day/Date bit 6. Date when 0, day of week when 1.
 
-  Wire.beginTransmission(DS3231_ADDRESS);
-  Wire._I2C_WRITE(DS3231_ALARM1);
-  Wire._I2C_WRITE(bin2bcd(dt.second()) | A1M1);
-  Wire._I2C_WRITE(bin2bcd(dt.minute()) | A1M2);
-  Wire._I2C_WRITE(bin2bcd(dt.hour()) | A1M3);
+  oneWireRTC.beginTransmission(DS3231_ADDRESS);
+  oneWireRTC._I2C_WRITE(DS3231_ALARM1);
+  oneWireRTC._I2C_WRITE(bin2bcd(dt.second()) | A1M1);
+  oneWireRTC._I2C_WRITE(bin2bcd(dt.minute()) | A1M2);
+  oneWireRTC._I2C_WRITE(bin2bcd(dt.hour()) | A1M3);
   if (DY_DT) {
-    Wire._I2C_WRITE(bin2bcd(dt.dayOfTheWeek()) | A1M4 | DY_DT);
+    oneWireRTC._I2C_WRITE(bin2bcd(dt.dayOfTheWeek()) | A1M4 | DY_DT);
   } else {
-    Wire._I2C_WRITE(bin2bcd(dt.day()) | A1M4 | DY_DT);
+    oneWireRTC._I2C_WRITE(bin2bcd(dt.day()) | A1M4 | DY_DT);
   }
-  Wire.endTransmission();
+  oneWireRTC.endTransmission();
 
   ctrl |= 0x01; // AI1E
   write_i2c_register(DS3231_ADDRESS, DS3231_CONTROL, ctrl);
@@ -1325,16 +1326,16 @@ bool RTC_DS3231::setAlarm2(const DateTime &dt, Ds3231Alarm2Mode alarm_mode) {
   uint8_t DY_DT = (alarm_mode & 0x8)
                   << 3; // Day/Date bit 6. Date when 0, day of week when 1.
 
-  Wire.beginTransmission(DS3231_ADDRESS);
-  Wire._I2C_WRITE(DS3231_ALARM2);
-  Wire._I2C_WRITE(bin2bcd(dt.minute()) | A2M2);
-  Wire._I2C_WRITE(bin2bcd(dt.hour()) | A2M3);
+  oneWireRTC.beginTransmission(DS3231_ADDRESS);
+  oneWireRTC._I2C_WRITE(DS3231_ALARM2);
+  oneWireRTC._I2C_WRITE(bin2bcd(dt.minute()) | A2M2);
+  oneWireRTC._I2C_WRITE(bin2bcd(dt.hour()) | A2M3);
   if (DY_DT) {
-    Wire._I2C_WRITE(bin2bcd(dt.dayOfTheWeek()) | A2M4 | DY_DT);
+    oneWireRTC._I2C_WRITE(bin2bcd(dt.dayOfTheWeek()) | A2M4 | DY_DT);
   } else {
-    Wire._I2C_WRITE(bin2bcd(dt.day()) | A2M4 | DY_DT);
+    oneWireRTC._I2C_WRITE(bin2bcd(dt.day()) | A2M4 | DY_DT);
   }
-  Wire.endTransmission();
+  oneWireRTC.endTransmission();
 
   ctrl |= 0x02; // AI2E
   write_i2c_register(DS3231_ADDRESS, DS3231_CONTROL, ctrl);
